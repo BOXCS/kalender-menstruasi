@@ -13,7 +13,7 @@ $stmt->bind_param("i", $user_id);
 $stmt->execute();
 $result = $stmt->get_result();
 
-$sql_chart = "SELECT siklus_hari FROM menstruasi WHERE user_id = ? ORDER BY tanggal_mulai DESC LIMIT 5";
+$sql_chart = "SELECT siklus_hari FROM menstruasi WHERE user_id = ? ORDER BY tanggal_mulai ASC LIMIT 5"; // Ubah DESC menjadi ASC
 $stmt_chart = $conn->prepare($sql_chart);
 $stmt_chart->bind_param("i", $user_id);
 $stmt_chart->execute();
@@ -23,6 +23,7 @@ $data_siklus = [];
 while ($row = $result_chart->fetch_assoc()) {
     $data_siklus[] = $row["siklus_hari"];
 }
+
 
 // Ambil data periode terakhir dan rata-rata siklus
 $sql_siklus = "SELECT tanggal_mulai, siklus_hari FROM menstruasi WHERE user_id = ? ORDER BY tanggal_mulai DESC LIMIT 1";
@@ -176,25 +177,47 @@ $masa_subur_end = $masa_subur_start ? date("Y-m-d", strtotime($masa_subur_start 
             Swal.fire({
                 title: "Tambah Data Menstruasi",
                 html: `
-                    <input type="date" id="tanggal_mulai" class="swal2-input">
-                    <input type="number" id="lama_hari" class="swal2-input" placeholder="Lama Hari">
-                `,
+            <input type="date" id="tanggal_mulai" class="swal2-input">
+            <input type="number" id="lama_hari" class="swal2-input" placeholder="Lama Hari">
+        `,
                 showCancelButton: true,
                 confirmButtonText: "Simpan",
                 confirmButtonColor: "#ff80ab",
                 preConfirm: () => {
                     let tanggal_mulai = document.getElementById("tanggal_mulai").value;
                     let lama_hari = document.getElementById("lama_hari").value;
-                    
+
                     if (!tanggal_mulai || !lama_hari) {
                         Swal.showValidationMessage("Semua field harus diisi!");
                         return false;
                     }
 
-                    Swal.fire("Berhasil!", "Data menstruasi telah ditambahkan.", "success");
+                    // Kirim data ke PHP dengan fetch
+                    return fetch("tambah_menstruasi.php", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/x-www-form-urlencoded"
+                            },
+                            body: `tanggal_mulai=${tanggal_mulai}&lama_hari=${lama_hari}`
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.status === "success") {
+                                Swal.fire("Berhasil!", "Data menstruasi telah ditambahkan.", "success")
+                                    .then(() => {
+                                        window.location.reload();
+                                    });
+                            } else {
+                                Swal.fire("Error!", "Gagal menambahkan data.", "error");
+                            }
+                        })
+                        .catch(error => {
+                            Swal.fire("Error!", "Terjadi kesalahan koneksi.", "error");
+                        });
                 }
             });
         }
+
 
         function editData(id, tanggal_mulai, lama_hari) {
             Swal.fire({
@@ -239,7 +262,7 @@ $masa_subur_end = $masa_subur_start ? date("Y-m-d", strtotime($masa_subur_start 
     <script>
         Swal.fire({
             title: "Pengingat!",
-            text: "Menstruasi Anda diperkirakan mulai dalam <?= $hari_menuju_menstruasi ?> hari.",
+            text: "Menstruasi Anda diperkirakan mulai dalam <?= $next_period ?> hari.",
             icon: "info"
         });
     </script>
