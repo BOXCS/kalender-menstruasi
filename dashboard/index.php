@@ -193,7 +193,7 @@ $masa_subur_end = $masa_subur_start ? date("Y-m-d", strtotime($masa_subur_start 
                     }
 
                     // Kirim data ke PHP dengan fetch
-                    return fetch("tambah_menstruasi.php", {
+                    fetch("tambah_menstruasi.php", {
                             method: "POST",
                             headers: {
                                 "Content-Type": "application/x-www-form-urlencoded"
@@ -202,18 +202,21 @@ $masa_subur_end = $masa_subur_start ? date("Y-m-d", strtotime($masa_subur_start 
                         })
                         .then(response => response.json())
                         .then(data => {
+                            console.log(data); // Cek respons dari server di console
                             if (data.status === "success") {
                                 Swal.fire("Berhasil!", "Data menstruasi telah ditambahkan.", "success")
                                     .then(() => {
                                         window.location.reload();
                                     });
                             } else {
-                                Swal.fire("Error!", "Gagal menambahkan data.", "error");
+                                Swal.fire("Error!", "Gagal menambahkan data: " + data.message, "error");
                             }
                         })
                         .catch(error => {
-                            Swal.fire("Error!", "Terjadi kesalahan koneksi.", "error");
+                            console.error("Fetch error:", error);
+                            Swal.fire("Error!", "Terjadi kesalahan koneksi: " + error.message, "error");
                         });
+
                 }
             });
         }
